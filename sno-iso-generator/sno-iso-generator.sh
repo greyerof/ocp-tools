@@ -6,7 +6,15 @@
 # https://docs.openshift.com/container-platform/4.14/installing/installing_sno/install-sno-preparing-to-install-sno.html
 #
 # All the cluster names will use the domain "cnfcertlab.org" by default. Change the variable "base_domain" if a different
-# domain is needed. Needs a
+# domain is needed. The install-config.yaml should exist in the current folder.
+#  final cluster name: <$CLUSTER_NAME>.$base_domain
+#  final node name   : master0.<$CLUSTER_NAME>.$base_domain
+#
+# Examples:
+#  1. Create 4.14.3 ISO file. Output folder will be "ocp_greyerof-4-14-3"
+#    $ OCP_VERSION=4.14.3 ./sno-iso-generator.sh
+#  2. Create 4.15.1 ISO file. Output folder "ocp_mysnocluster". Use locally installed "yq" program.
+#    $ OCP_VERSION=4.15.1 CLUSTER_NAME=mysnocluster LOCAL_YQ=1 ./sno-iso-generator.sh
 #
 # Preconditions:
 # - The file install-config.yaml must be exist in the current folder and the fields "pullSecret" and "sshKey" must be
@@ -25,8 +33,8 @@
 #             tool yq. This will avoid downloading the docker container.
 #
 # Outputs: the script will create a separate folder with all the artifacts needed to build
-#          the SNO ISO file. Folder name is ocp_${CLUSTER_NAME}
-#
+#          the SNO ISO file. Folder name is ocp_${CLUSTER_NAME}. It will also show the location
+#          of both the kubeconfig file and the kubeadmin credentials for the (web) console.
 #
 
 base_domain=cnfcertlab.org
@@ -102,4 +110,3 @@ popd
 echo "Openshift $OCP_VERSION files created:"
 echo "  ISO        : ${PWD}/$ocp_folder/rhcos-live-ocp-${OCP_VERSION}.iso"
 echo "  kubeconfig : ${PWD}/$ocp_folder/ocp/auth/kubeconfig"
-
