@@ -1,0 +1,28 @@
+---
+apiVersion: v1
+baseDomain: template-field-for-base-domain
+compute:
+- architecture: amd64
+  name: worker
+  replicas: 0
+controlPlane:
+  architecture: amd64
+  name: master
+  replicas: 1
+metadata:
+  name: template-field-for-cluster-name
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  machineNetwork:
+  - cidr: 10.0.0.0/16
+  networkType: OVNKubernetes
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  none: {}
+bootstrapInPlace:
+  installationDisk: /dev/sda
+pullSecret: put-your-own-pull-secrets-here
+sshKey: put-your-own-ssh-pub-key-here
