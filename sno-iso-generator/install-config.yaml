@@ -23,6 +23,6 @@ networking:
 platform:
   none: {}
 bootstrapInPlace:
-  installationDisk: /dev/sda
+  installationDisk: /dev/vda
 pullSecret: put-your-own-pull-secrets-here
 sshKey: put-your-own-ssh-pub-key-here
