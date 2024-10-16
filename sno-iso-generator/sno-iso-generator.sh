@@ -28,6 +28,8 @@
 #
 # Inputs:
 # - OCP_VERSION: env var with desired version, e.g. OCP_VERSION=4.13.4
+# - PULL_SECRET: path to openshift pull secret file
+# - SSH_PUB_KEY: path to public ssh key
 # - CLUSTER_NAME: (optional) cluster name. If not set, will be defaulted to greyerof-$OCP_VERSION
 # - LOCAL_YQ: (optional) value won't be read. It just tells the script to use the locally installed
 #             tool yq. This will avoid downloading the docker container.
@@ -44,6 +46,16 @@ set -o errexit
 
 if [ -z "${OCP_VERSION}" ]; then
   echo "Env var OCP_VERSION was not set."
+  exit 1
+fi
+
+if [ -z "${PULL_SECRET}" ]; then
+  echo "Env var PULL_SECRET was not set. Please set it to your pull secret file path."
+  exit 1
+fi
+
+if [ -z "${SSH_PUB_KEY}" ]; then
+  echo "Env var SSH_PUB_KEY was not set. Please set it to your ssh public key path."
   exit 1
 fi
 
@@ -66,17 +78,28 @@ echo "Creating output folder $ocp_folder"
 mkdir $ocp_folder
 
 echo "Preparing iso for OCP version ${OCP_VERSION}, cluster name ${CLUSTER_NAME} in folder ${ocp_folder}."
+echo "Pull secret path: $PULL_SECRET"
+echo "SSH pub key path: $SSH_PUB_KEY"
+# read pull secret and ssh public key files
+pullSecret="$(cat $PULL_SECRET)"
+sshKey=$(cat $SSH_PUB_KEY)
 
-echo "Updating .baseDomain and .metadata.name from install-config.yaml file..."
+echo "Updating .baseDomain, .metadata.name, .pullSecret and .sshKey from install-config.yaml file..."
+
 # Change (sequentially) the fields .baseDoman and .metadata.name using env vars (internal) $base_domain and (external) $CLUSTER_NAME
 if [ -z "${LOCAL_YQ}" ]; then
   echo "Using yq from docker container docker.io/mikefarah/yq"
-  cat install-config.yaml | podman run -i --rm docker.io/mikefarah/yq ".baseDomain = \"$base_domain\"" \
-                          | podman run -i --rm docker.io/mikefarah/yq ".metadata.name = \"${CLUSTER_NAME}\"" > $ocp_folder/install-config.yaml
+
+  cat install-config.yaml | podman run -i --rm docker.io/mikefarah/yq ".baseDomain = \"$base_domain\""          \
+                          | podman run -i --rm docker.io/mikefarah/yq ".metadata.name = \"$CLUSTER_NAME\""      \
+                          | podman run -i --rm docker.io/mikefarah/yq ".pullSecret = ( $pullSecret | tojson )"  \
+                          | podman run -i --rm docker.io/mikefarah/yq ".sshKey = \"$sshKey\"" > $ocp_folder/install-config.yaml
 else
   echo "Using local yq program from $(which yq)"
-  cat install-config.yaml | yq --yaml-output ".baseDomain = \"$base_domain\"" \
-                          | yq --yaml-output ".metadata.name = \"${CLUSTER_NAME}\"" > $ocp_folder/install-config.yaml
+  cat install-config.yaml | yq --yaml-output ".baseDomain = \"$base_domain\""         \
+                          | yq --yaml-output ".metadata.name = \"$CLUSTER_NAME\""     \
+                          | yq --yaml-output ".pullSecret = ( $pullSecret | tojson )" \
+                          | yq --yaml-output ".sshKey = \"$sshKey\"" > $ocp_folder/install-config.yaml
 fi
 
 pushd $ocp_folder
